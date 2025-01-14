@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.swx.adbremote",
+  "variantName": "release",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 1,
+      "versionName": "20250114085336",
+      "outputFile": "ADB_Remote_ATV_20250114085336.apk"
+    }
+  ],
+  "elementType": "File"
+}
