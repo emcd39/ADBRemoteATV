@@ -13,9 +13,11 @@ import com.swx.adbremote.adblib.AdbStream;
 
 import org.androidannotations.api.BackgroundExecutor;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.spec.InvalidKeySpecException;
 import java.security.NoSuchAlgorithmException;
 
 import javax.xml.bind.DatatypeConverter;
@@ -25,6 +27,8 @@ public class ADBConnectUtil {
     public static AdbConnection adbConnection;
     public static ConnectInstance bean;
     private static AdbCrypto crypto;
+    private static final String ADB_KEY_PRIVATE_NAME = "adbkey";
+    private static final String ADB_KEY_PUBLIC_NAME = "adbkey.pub";
 
     public interface ConnectCallable {
         public void done(boolean result);
@@ -86,13 +90,8 @@ public class ADBConnectUtil {
             Log.d("ADBConnectUtil", "socket is null");
             return false;
         }
-        if (crypto == null) {
-            try {
-                crypto = AdbCrypto.generateAdbKeyPair(DatatypeConverter::printBase64Binary);
-            } catch (NoSuchAlgorithmException e) {
-                Log.d("ADBConnectUtil", "AdbCrypto NoSuchAlgorithmException");
-                return false;
-            }
+        if (!ensureCryptoReady()) {
+            return false;
         }
         try {
             adbConnection = AdbConnection.create(socket, crypto);
@@ -108,6 +107,34 @@ public class ADBConnectUtil {
             return false;
         }
         return true;
+    }
+
+    private static synchronized boolean ensureCryptoReady() {
+        if (crypto != null) {
+            return true;
+        }
+
+        File filesDir = MainApplication.getContext().getFilesDir();
+        File privateKey = new File(filesDir, ADB_KEY_PRIVATE_NAME);
+        File publicKey = new File(filesDir, ADB_KEY_PUBLIC_NAME);
+
+        if (privateKey.exists() && publicKey.exists()) {
+            try {
+                crypto = AdbCrypto.loadAdbKeyPair(DatatypeConverter::printBase64Binary, privateKey, publicKey);
+                return true;
+            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+                Log.w(TAG, "Failed to load existing adb key pair, regenerate.", e);
+            }
+        }
+
+        try {
+            crypto = AdbCrypto.generateAdbKeyPair(DatatypeConverter::printBase64Binary);
+            crypto.saveAdbKeyPair(privateKey, publicKey);
+            return true;
+        } catch (NoSuchAlgorithmException | IOException e) {
+            Log.e(TAG, "Failed to generate/save adb key pair.", e);
+            return false;
+        }
     }
 
     private static void execShellCMD(String shellCmd, ShellExecCallable callable) {
