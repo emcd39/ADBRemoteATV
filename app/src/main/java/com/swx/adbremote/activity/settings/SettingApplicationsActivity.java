@@ -1,7 +1,6 @@
 package com.swx.adbremote.activity.settings;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +10,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,18 +22,23 @@ import com.swx.adbremote.components.AppOperateDialog;
 import com.swx.adbremote.components.QuestionDialog;
 import com.swx.adbremote.database.DBManager;
 import com.swx.adbremote.entity.AppItem;
-import com.swx.adbremote.utils.Constant;
+import com.swx.adbremote.utils.ADBConnectUtil;
 import com.swx.adbremote.utils.BeanUtil;
+import com.swx.adbremote.utils.Constant;
 import com.swx.adbremote.utils.MetricsUtil;
 import com.swx.adbremote.utils.RecyclerViewItemEqspa;
 import com.swx.adbremote.utils.SharedData;
 import com.swx.adbremote.utils.ThreadPoolService;
+import com.swx.adbremote.utils.ToastUtil;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * <a href="https://www.cnblogs.com/wjtaigwh/p/6543354.html">Android -- 实现RecyclerView可拖拽Item</a>
+ * <a href="https://www.cnblogs.com/wjtaigwh/p/6543354.html">Android -- 实现RecyclerView可拖拽item</a>
  */
 public class SettingApplicationsActivity extends AppCompatActivity implements View.OnClickListener {
     private SettingApplicationsAdapter mRvAdapter;
@@ -45,6 +50,8 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     public static final int WHAT_ADD = -2;
     public static final int WHAT_LIST = -3;
     public static final int WHAT_UPDATE = -4;
+    public static final int WHAT_DEVICE_APPS = -5;
+
     private int selectPosition = 0;
     private Integer selectAppId;
     private Handler handler;
@@ -82,7 +89,6 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
         });
 
         handler = new Handler(Looper.getMainLooper()) {
-            @SuppressLint("NotifyDataSetChanged")
             @Override
             public void handleMessage(@NonNull Message msg) {
                 if (msg.what == WHAT_LIST) {
@@ -90,13 +96,22 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
                     mRvAdapter.setData(appItems);
                 } else if (msg.what == WHAT_ADD) {
                     mRvAdapter.addData((AppItem) msg.obj);
-                    operateDialog.hide();
+                    if (operateDialog != null) {
+                        operateDialog.hide();
+                    }
                 } else if (msg.what == WHAT_DELETE) {
                     mRvAdapter.remove(selectPosition);
-                    questionDialog.hide();
+                    if (questionDialog != null) {
+                        questionDialog.hide();
+                    }
                 } else if (msg.what == WHAT_UPDATE) {
                     mRvAdapter.updateData(msg.arg1, (AppItem) msg.obj);
-                    operateDialog.hide();
+                    if (operateDialog != null) {
+                        operateDialog.hide();
+                    }
+                } else if (msg.what == WHAT_DEVICE_APPS) {
+                    List<String> packageNames = BeanUtil.castList(msg.obj, String.class);
+                    showDeviceAppsDialog(packageNames);
                 }
             }
         };
@@ -105,7 +120,6 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     private void initEvent() {
         findViewById(R.id.btn_setting_app_back).setOnClickListener(this);
         findViewById(R.id.btn_setting_add_app).setOnClickListener(this);
-        findViewById(R.id.btn_setting_add_online).setOnClickListener(this);
         mRvAdapter.setOnItemLongClickListener(vh -> mItemTouchHelper.startDrag(vh));
         mRvAdapter.setOnItemClickListener(new SettingApplicationsAdapter.OnItemClickListener() {
             @Override
@@ -142,15 +156,82 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
         if (id == R.id.btn_setting_app_back) {
             finish();
         } else if (id == R.id.btn_setting_add_app) {
-            showOperateDialog(null);
-        } else if (id == R.id.btn_setting_add_online) {
-            // 添加在线JSON
-            Intent intent = new Intent(this, SettingOnlineAppsActivity.class);
-            intent.putExtra(Constant.VALUE_ACTIVITY_APP_PRIORITY, mRvAdapter.getItemCount());
-            startActivity(intent);
+            loadAppsFromDevice();
         }
     }
 
+    private void loadAppsFromDevice() {
+        ADBConnectUtil.connection(result -> {
+            if (!result) {
+                ToastUtil.showShort(getString(R.string.text_connection_failed));
+                return;
+            }
+            ADBConnectUtil.listInstalledPackages((success, msg) -> {
+                if (!success) {
+                    ToastUtil.showShort(getString(R.string.text_empty));
+                    return;
+                }
+                List<String> packageNames = parseInstalledPackages(msg);
+                if (packageNames.isEmpty()) {
+                    ToastUtil.showShort(getString(R.string.text_empty));
+                    return;
+                }
+                Message message = new Message();
+                message.what = WHAT_DEVICE_APPS;
+                message.obj = packageNames;
+                handler.sendMessage(message);
+            });
+        });
+    }
+
+    private List<String> parseInstalledPackages(String msg) {
+        List<String> packageNames = new ArrayList<>();
+        if (msg == null || msg.trim().isEmpty()) {
+            return packageNames;
+        }
+        Pattern pattern = Pattern.compile("package:([\\w.]+)");
+        Matcher matcher = pattern.matcher(msg);
+        while (matcher.find()) {
+            packageNames.add(matcher.group(1));
+        }
+        Collections.sort(packageNames);
+        return packageNames;
+    }
+
+    private void showDeviceAppsDialog(List<String> packageNames) {
+        String[] items = packageNames.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.text_add_apps)
+                .setItems(items, (dialogInterface, i) -> addSelectedPackage(packageNames.get(i)))
+                .setNegativeButton(R.string.text_cancel, null)
+                .show();
+    }
+
+    private void addSelectedPackage(String packageName) {
+        for (AppItem item : mRvAdapter.getData()) {
+            if (packageName.equals(item.getUrl())) {
+                ToastUtil.showShort(getString(R.string.text_empty));
+                return;
+            }
+        }
+        ThreadPoolService.newTask(() -> {
+            if (DBManager.getInstance().getAppManager().isExist(packageName)) {
+                ToastUtil.showToastThread(getString(R.string.text_empty));
+                return;
+            }
+            AppItem appItem = new AppItem("", packageName, packageName);
+            appItem.setPriority(mRvAdapter.getItemCount());
+            AppItem saved = DBManager.getInstance().getAppManager().insert(appItem);
+            if (saved == null) {
+                ToastUtil.showToastThread(getString(R.string.text_update_failed));
+                return;
+            }
+            Message message = new Message();
+            message.what = WHAT_ADD;
+            message.obj = saved;
+            handler.sendMessage(message);
+        });
+    }
 
     private void showOperateDialog(AppItem app) {
         if (operateDialog == null) {
@@ -169,7 +250,6 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
             });
         }
         if (app != null) {
-            // 更新操作
             operateDialog.setData(app);
         }
         operateDialog.show();
@@ -179,11 +259,9 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
         ThreadPoolService.newTask(() -> {
             Message message = new Message();
             if (appItem.getId() == null) {
-                // 添加
                 message.obj = DBManager.getInstance().getAppManager().insert(appItem);
                 message.what = WHAT_ADD;
             } else {
-                // 更新
                 DBManager.getInstance().getAppManager().update(appItem);
                 message.obj = appItem;
                 message.what = WHAT_UPDATE;
@@ -211,13 +289,9 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
         questionDialog.show();
     }
 
-    /**
-     * 处理弹窗点击事件，删除APP
-     */
     private void handleQuestionDialogConfirm() {
         ThreadPoolService.newTask(() -> {
             DBManager.getInstance().getAppManager().delete(selectAppId);
-            // 不能重新拉取，注意顺序
             Message message = new Message();
             message.what = WHAT_DELETE;
             message.arg1 = selectPosition;
@@ -228,7 +302,6 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     @Override
     protected void onStop() {
         super.onStop();
-        // 离开页面，就需要保存最新顺序
         saveAppOrder();
         SharedData.getInstance().put(Constant.KEY_QUICK_ACCESS_ORDER_CHANGE, true).commit();
     }
@@ -251,9 +324,7 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
 
         @Override
         public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            //得到当拖拽的viewHolder的Position
             int fromPosition = viewHolder.getAdapterPosition();
-            //拿到当前拖拽到的item的viewHolder
             int toPosition = target.getAdapterPosition();
             mRvAdapter.swap(fromPosition, toPosition);
             mRvAdapter.notifyItemMoved(fromPosition, toPosition);

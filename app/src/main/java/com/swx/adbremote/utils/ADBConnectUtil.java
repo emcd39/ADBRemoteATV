@@ -167,8 +167,17 @@ public class ADBConnectUtil {
     }
 
     public static void startApp(String appUrl, ShellExecCallable callable) {
-        String shellCmd = String.format("shell:am start %s", appUrl);
+        String shellCmd;
+        if (ValidationUtil.verifyPackageName(appUrl)) {
+            shellCmd = String.format("shell:monkey -p %s -c android.intent.category.LAUNCHER 1", appUrl);
+        } else {
+            shellCmd = String.format("shell:am start %s", appUrl);
+        }
         execShellCMD(shellCmd, callable);
+    }
+
+    public static void listInstalledPackages(ShellExecCallable callable) {
+        execShellCMD("shell:pm list packages -3", callable);
     }
 
     /**

@@ -10,6 +10,7 @@ public class ValidationUtil {
     private static final String regIp = "^([1-9]|[1-9]\\d|1\\d{2}|2[0-1]\\d|22[0-3])(\\.(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])){3}$";
     private static final String regUrl = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
     public static final String regStartPath = "^([a-zA-Z_][a-zA-Z0-9_]*[.])*([a-zA-Z_][a-zA-Z0-9_]*)/[a-zA-Z0-9_.]*$";
+    public static final String regPackageName = "^([a-zA-Z_][a-zA-Z0-9_]*[.])+[a-zA-Z_][a-zA-Z0-9_]*$";
 
     public static boolean verifyIpv4(String ip) {
         if (TextUtils.isEmpty(ip)) return false;
@@ -36,6 +37,11 @@ public class ValidationUtil {
      */
     public static boolean verifyStartPath(String startPath) {
         if (TextUtils.isEmpty(startPath)) return false;
-        return startPath.matches(regStartPath);
+        return startPath.matches(regStartPath) || startPath.matches(regPackageName);
+    }
+
+    public static boolean verifyPackageName(String packageName) {
+        if (TextUtils.isEmpty(packageName)) return false;
+        return packageName.matches(regPackageName);
     }
 }

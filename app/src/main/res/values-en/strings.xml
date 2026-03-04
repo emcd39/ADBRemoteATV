@@ -76,7 +76,7 @@
     <string name="text_add_online_json">Configure address</string>
     <string name="text_config_url">Configure address</string>
     <string name="text_online_url">Online address</string>
-    <string name="text_add_apps">Add Apps</string>
+    <string name="text_add_apps">Add from device</string>
     <string name="text_add_online">Online Apps </string>
     <string name="text_ip_error">Unverified IPv4 address</string>
     <string name="text_port_error">Unverified port</string>
