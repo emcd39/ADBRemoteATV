@@ -214,12 +214,6 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     }
 
     private void addSelectedPackage(String packageName) {
-        for (AppItem item : mRvAdapter.getData()) {
-            if (packageName.equals(item.getUrl())) {
-                ToastUtil.showShort(getString(R.string.text_empty));
-                return;
-            }
-        }
         ThreadPoolService.newTask(() -> {
             if (DBManager.getInstance().getAppManager().isExist(packageName)) {
                 ToastUtil.showToastThread(getString(R.string.text_empty));
