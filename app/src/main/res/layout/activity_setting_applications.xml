@@ -82,7 +82,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/background_btn_add_app"
-            android:text="@string/text_add_apps"
+            android:text="@string/text_refresh_apps"
             android:textColor="@color/text_color"
             android:textSize="18sp"
             android:textStyle="bold" />

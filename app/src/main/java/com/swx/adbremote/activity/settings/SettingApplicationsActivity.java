@@ -67,7 +67,7 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     @Override
     protected void onStart() {
         super.onStart();
-        initData();
+        loadAppsFromDevice();
     }
 
     private void init() {
@@ -134,6 +134,11 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
                 selectPosition = position;
                 showOperateDialog(app);
             }
+
+            @Override
+            public void onAddToQuickAccessClick(int position, AppItem app) {
+                addSelectedPackage(app.getUrl());
+            }
         });
     }
 
@@ -176,9 +181,14 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
                     ToastUtil.showShort(getString(R.string.text_empty));
                     return;
                 }
+                List<AppItem> appItems = new ArrayList<>();
+                for (String packageName : packageNames) {
+                    AppItem appItem = new AppItem("", packageName, packageName);
+                    appItems.add(appItem);
+                }
                 Message message = new Message();
-                message.what = WHAT_DEVICE_APPS;
-                message.obj = packageNames;
+                message.what = WHAT_LIST;
+                message.obj = appItems;
                 handler.sendMessage(message);
             });
         });

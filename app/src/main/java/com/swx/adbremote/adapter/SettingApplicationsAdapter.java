@@ -45,6 +45,8 @@ public class SettingApplicationsAdapter extends RecyclerView.Adapter<SettingAppl
         void onRemoveClick(int position, Integer id);
 
         void onEditClick(int position, AppItem app);
+
+        void onAddToQuickAccessClick(int position, AppItem app);
     }
 
     private ItemLongClickListener itemLongClickListener;
@@ -83,6 +85,11 @@ public class SettingApplicationsAdapter extends RecyclerView.Adapter<SettingAppl
             int currentPosition = holder.getAdapterPosition();
             AppItem data = getData(currentPosition);
             onItemClickListener.onEditClick(currentPosition, data);
+        });
+        holder.addToQuickAccess.setOnClickListener(view -> {
+            int currentPosition = holder.getAdapterPosition();
+            AppItem data = getData(currentPosition);
+            onItemClickListener.onAddToQuickAccessClick(currentPosition, data);
         });
     }
 
@@ -175,6 +182,7 @@ public class SettingApplicationsAdapter extends RecyclerView.Adapter<SettingAppl
         TextView name;
         ImageButton remove;
         ImageButton edit;
+        ImageButton addToQuickAccess;
         Context context;
         ImageButton btnDrag;
 
@@ -185,6 +193,7 @@ public class SettingApplicationsAdapter extends RecyclerView.Adapter<SettingAppl
             name = itemView.findViewById(R.id.iv_setting_app_name);
             remove = itemView.findViewById(R.id.btn_setting_delete_app);
             edit = itemView.findViewById(R.id.btn_setting_edit_app);
+            addToQuickAccess = itemView.findViewById(R.id.btn_setting_add_to_quick_access);
             btnDrag = itemView.findViewById(R.id.btn_setting_app_drag);
         }
     }

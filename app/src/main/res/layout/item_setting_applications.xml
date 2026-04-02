@@ -45,6 +45,19 @@
 
 
     <ImageButton
+        android:id="@+id/btn_setting_add_to_quick_access"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@string/text_add"
+        android:background="@drawable/background_btn_circle_tr"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_setting_delete_app"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_plus"
+        app:tint="@color/text_color"/>
+
+    <ImageButton
         android:id="@+id/btn_setting_delete_app"
         android:layout_width="30dp"
         android:layout_height="30dp"

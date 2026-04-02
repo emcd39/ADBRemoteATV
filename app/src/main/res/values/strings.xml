@@ -77,6 +77,7 @@
     <string name="text_config_url">配置地址</string>
     <string name="text_online_url">在线地址</string>
     <string name="text_add_apps">从设备添加应用</string>
+    <string name="text_refresh_apps">刷新应用列表</string>
     <string name="text_add_online">软件仓库</string>
     <string name="text_ip_error">IPV4地址不符合要求</string>
     <string name="text_port_error">非法端口</string>
