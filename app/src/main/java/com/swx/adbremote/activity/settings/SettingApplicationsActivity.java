@@ -67,7 +67,8 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     @Override
     protected void onStart() {
         super.onStart();
-        loadAppsFromDevice();
+        initData();
+        loadAppsFromDevice(true);
     }
 
     private void init() {
@@ -161,14 +162,16 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
         if (id == R.id.btn_setting_app_back) {
             finish();
         } else if (id == R.id.btn_setting_add_app) {
-            loadAppsFromDevice();
+            loadAppsFromDevice(false);
         }
     }
 
-    private void loadAppsFromDevice() {
+    private void loadAppsFromDevice(boolean silent) {
         ADBConnectUtil.connection(result -> {
             if (!result) {
-                ToastUtil.showShort(getString(R.string.text_connection_failed));
+                if (!silent) {
+                    ToastUtil.showShort(getString(R.string.text_connection_failed));
+                }
                 return;
             }
             ADBConnectUtil.listInstalledPackages((success, msg) -> {
