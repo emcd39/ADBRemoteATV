@@ -167,33 +167,26 @@ public class SettingApplicationsActivity extends AppCompatActivity implements Vi
     }
 
     private void loadAppsFromDevice(boolean silent) {
-        ADBConnectUtil.connection(result -> {
-            if (!result) {
+        ADBConnectUtil.listInstalledPackages((success, msg) -> {
+            if (!success) {
                 if (!silent) {
                     ToastUtil.showShort(getString(R.string.text_connection_failed));
                 }
                 return;
             }
-            ADBConnectUtil.listInstalledPackages((success, msg) -> {
-                if (!success) {
-                    ToastUtil.showShort(getString(R.string.text_empty));
-                    return;
-                }
-                List<String> packageNames = parseInstalledPackages(msg);
-                if (packageNames.isEmpty()) {
-                    ToastUtil.showShort(getString(R.string.text_empty));
-                    return;
-                }
-                List<AppItem> appItems = new ArrayList<>();
-                for (String packageName : packageNames) {
-                    AppItem appItem = new AppItem("", packageName, packageName);
-                    appItems.add(appItem);
-                }
-                Message message = new Message();
-                message.what = WHAT_LIST;
-                message.obj = appItems;
-                handler.sendMessage(message);
-            });
+            List<String> packageNames = parseInstalledPackages(msg);
+            if (packageNames.isEmpty()) {
+                return;
+            }
+            List<AppItem> appItems = new ArrayList<>();
+            for (String packageName : packageNames) {
+                AppItem appItem = new AppItem("", packageName, packageName);
+                appItems.add(appItem);
+            }
+            Message message = new Message();
+            message.what = WHAT_LIST;
+            message.obj = appItems;
+            handler.sendMessage(message);
         });
     }
 
